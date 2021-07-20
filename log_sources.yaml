@@ -1,0 +1,3 @@
+log-sources:
+  - name: application
+    path: /var/log/gitlab/gitlab-rails/application_json.log
