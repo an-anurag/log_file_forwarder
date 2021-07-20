@@ -34,8 +34,6 @@ class Forwarder:
 
         try:
             source_log = open(source_file, 'rb')
-            print(source_log)
-            print(type(source_log))
         except FileNotFoundError as err:
             self.LOGGER.error(err)
 
