@@ -13,24 +13,21 @@ class Forwarder:
     # socket info
     SOC = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     HOST = conf.read('graylog-input', 'host')
-    PORT = int(conf.read('graylog-input', 'port'))
-    SERVER = (HOST, PORT)
+    # to read socket port from cfg file
+    # PORT = int(conf.read('graylog-input', 'port'))
+    # SERVER = (HOST, PORT)
     LOGGER = logger
 
     # get log sources form path
     LOG_SOURCES = get_sources_from_yaml()
 
-    def get_log_sources(self):
-        # get log source paths
-        sources = []
-        for source in self.LOG_SOURCES['log-sources']:
-            file_path = source['path']
-            sources.append(file_path)
-        return sources
-
-    def process_file(self, file):
+    def process_file(self, file, port):
+        self.LOGGER.info('file processing started')
+        self.LOGGER.info('file name: %s' % file)
+        self.LOGGER.info('Selected socket type: UDP, port: %s' % port)
         source_file = os.path.join(file)
         source_log = None
+        server = (self.HOST, int(port))
 
         try:
             source_log = open(source_file, 'rb')
@@ -49,11 +46,12 @@ class Forwarder:
                 time.sleep(1)
                 source_log.seek(where)
             else:
-                self.SOC.sendto(bytes(line), self.SERVER)
+                self.SOC.sendto(bytes(line), server)
 
     def run(self):
         # process all files parallelly
-        for file in self.get_log_sources():
-            thread = threading.Thread(target=self.process_file, args=(file,))
+        for source in self.LOG_SOURCES['log-sources']:
+            file_path = source['path']
+            port = source['port']
+            thread = threading.Thread(target=self.process_file, args=(file_path, port))
             thread.start()
-

@@ -13,7 +13,6 @@ class ConfigReader:
         self.cfg_file = os.path.join(os.path.dirname(__file__), '../setup.cfg')
         self._config = configparser.ConfigParser()
         self._config.read(self.cfg_file)
-        print(self._config.sections())
 
     def read(self, section, item):
         """
