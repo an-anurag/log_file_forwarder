@@ -47,6 +47,7 @@ class Forwarder:
                 source_log.seek(where)
             else:
                 self.SOC.sendto(bytes(line), server)
+                self.LOGGER.info("Data sent: %s" % line)
 
     def run(self):
         # process all files parallelly
