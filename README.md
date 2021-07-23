@@ -1,3 +1,9 @@
 # Realtime log file forwarder
 
-This module reads any live .log file and send each newly appending line to UDP socket to Syslog in realtime.
+# What is this
+This module reads any live .log file and send each newly appending line to web sockets in realtime.
+All the files that needs to be sent should be configured in the log_sources.yaml file
+
+# How to run
+Run the `main.py` to have all the files being sent to the syslog port
+This module can be kept running in the background with unix utility such as `screen`
