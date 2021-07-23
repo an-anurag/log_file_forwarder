@@ -1,4 +1,12 @@
 log-sources:
   - name: application
     path: /var/log/gitlab/gitlab-rails/application_json.log
+    host: 10.111.49.247
     port: 5142
+    type: UDP
+
+  - name: application
+    path: /var/log/messages
+    host: 10.111.49.247
+    port: 5142
+    type: UDP

@@ -3,56 +3,65 @@ import time
 import socket
 import threading
 
-from bundle.config import conf
+
 from bundle.logger import logger
-from bundle.yaml_reader import get_sources_from_yaml
 
 
-class Forwarder:
+class Forwarder(threading.Thread):
 
-    # socket info
-    SOC = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    HOST = conf.read('graylog-input', 'host')
-    # to read socket port from cfg file
-    # PORT = int(conf.read('graylog-input', 'port'))
-    # SERVER = (HOST, PORT)
-    LOGGER = logger
+    log = logger
 
-    # get log sources form path
-    LOG_SOURCES = get_sources_from_yaml()
+    def __init__(self, name=None, log_file=None, host=None, port=None, socket_type=None):
+        super().__init__()
+        self.name = name
+        self.log_file = log_file
+        self.host = host
+        self.port = port
+        self.socket_type = socket_type
 
-    def process_file(self, file, port):
-        self.LOGGER.info('file processing started')
-        self.LOGGER.info('file name: %s' % file)
-        self.LOGGER.info('Selected socket type: UDP, port: %s' % port)
-        source_file = os.path.join(file)
+        self.server = (self.host, self.port)
+        self.socket = None
+
+    def create_socket(self):
+        try:
+            if self.socket_type == 'UDP':
+                self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+            if self.socket_type == 'TCP':
+                self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        except socket.error as err:
+            self.log.exception('Failed to create socket')
+
+    def process_file(self):
+        log = self.log
+        log.info('file processing started: %s' % self.name)
+        log.info('Selected log source: %s' % self.log_file)
+        log.info('Selected socket type: %s' % self.socket_type)
+        log.info('Receiver host: %s' % self.host)
+        log.info('Receiver port: %s' % self.port)
+        source_file = os.path.join(self.log_file)
         source_log = None
-        server = (self.HOST, int(port))
 
         try:
             source_log = open(source_file, 'rb')
+            # Find the size of the file and move to the end
+            st_results = os.stat(source_file)
+            st_size = st_results.st_size
+            source_log.seek(st_size)
         except FileNotFoundError as err:
-            self.LOGGER.error(err)
+            log.error('no "%s" log file found terminating the operation' % self.name)
 
-        # Find the size of the file and move to the end
-        st_results = os.stat(source_file)
-        st_size = st_results.st_size
-        source_log.seek(st_size)
+        if source_log:
+            while True:
+                where = source_log.tell()
+                line = source_log.readline()
+                if not line:
+                    log.info('waiting for log..')
+                    time.sleep(1)
+                    source_log.seek(where)
+                else:
+                    self.socket.sendto(bytes(line), self.server)
+                    log.info("log data sent: %s" % line)
 
-        while True:
-            where = source_log.tell()
-            line = source_log.readline()
-            if not line:
-                time.sleep(1)
-                source_log.seek(where)
-            else:
-                self.SOC.sendto(bytes(line), server)
-                self.LOGGER.info("Data sent: %s" % line)
-
-    def run(self):
-        # process all files parallelly
-        for source in self.LOG_SOURCES['log-sources']:
-            file_path = source['path']
-            port = source['port']
-            thread = threading.Thread(target=self.process_file, args=(file_path, port))
-            thread.start()
+    def run(self) -> None:
+        self.process_file()
