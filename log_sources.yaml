@@ -1,14 +1,7 @@
 log-sources:
   - name: application
-    path: /var/log/gitlab/gitlab-rails/application_json.log
+    path: /var/log/apt/term.log
     file-type: live
     host: 10.111.49.247
-    port: 5142
-    type: UDP
-
-  - name: application
-    path: /var/log/messages
-    file-type: live
-    host: 10.111.49.247
-    port: 5142
+    port: 5143
     type: UDP
